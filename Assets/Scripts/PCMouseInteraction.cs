@@ -5,11 +5,18 @@ using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Management;
+using UnityEngine.XR.Interaction.Toolkit.Inputs.Simulation;
 
 // Modo PC (sin visor): camara en primera persona con mouse + teclado que usa el XR Interaction Toolkit.
 // Si hay un visor VR activo, este script no toca nada y el rig funciona con los mandos.
 public class PCMouseInteraction : MonoBehaviour
 {
+    public enum PcMode { XRDeviceSimulator, FirstPerson }
+
+    [Header("Modo PC")]
+    [Tooltip("XRDeviceSimulator: mandos XR simulados con su panel de comandos. FirstPerson: camara simple con clic para agarrar.")]
+    [SerializeField] PcMode mode = PcMode.XRDeviceSimulator;
+
     [Header("Referencias XR")]
     [SerializeField] XRInteractionManager manager;
     [SerializeField] NearFarInteractor interactor;
@@ -32,6 +39,10 @@ public class PCMouseInteraction : MonoBehaviour
     CharacterController controller;
     IXRSelectInteractable held;
     bool pcMode;
+    bool simMode;
+    XRDeviceSimulator sim;
+    float simBodyMultiplier, crouchOffset;
+    float baseOffsetY;
     float yaw, pitch, eyeHeight, verticalSpeed;
     string hint = "";
     bool showHelp = true;
@@ -42,8 +53,18 @@ public class PCMouseInteraction : MonoBehaviour
     {
         var xr = XRGeneralSettings.Instance;
         bool headsetActive = xr != null && xr.Manager != null && xr.Manager.activeLoader != null;
+        if (headsetActive)
+        {
+            if (deviceSimulator != null) deviceSimulator.SetActive(false);
+            enabled = false;
+            return;
+        }
+        if (mode == PcMode.XRDeviceSimulator && deviceSimulator != null)
+        {
+            SetupSimulator();
+            return;
+        }
         if (deviceSimulator != null) deviceSimulator.SetActive(false);
-        if (headsetActive) { enabled = false; return; }
 
         pcMode = true;
         cam = Camera.main;
@@ -78,6 +99,42 @@ public class PCMouseInteraction : MonoBehaviour
         LockCursor(true);
     }
 
+    void SetupSimulator()
+    {
+        simMode = true;
+        cam = Camera.main;
+        deviceSimulator.SetActive(true);
+        sim = deviceSimulator.GetComponent<XRDeviceSimulator>();
+        baseOffsetY = cameraOffset != null ? cameraOffset.localPosition.y : 0f;
+        if (sim != null)
+        {
+            simBodyMultiplier = sim.keyboardBodyTranslateMultiplier;
+            // Shift ya no controla la mano izquierda: se usa para correr. La mano izquierda pasa a Alt izquierdo.
+            var left = sim.manipulateLeftAction != null ? sim.manipulateLeftAction.action : null;
+            if (left != null) left.ApplyBindingOverride(0, "<Keyboard>/leftAlt");
+        }
+        LockCursor(true);
+    }
+
+    void UpdateSimulator()
+    {
+        var kb = Keyboard.current;
+        var mouse = Mouse.current;
+        if (kb == null || mouse == null) return;
+
+        if (kb.escapeKey.wasPressedThisFrame) LockCursor(false);
+        if (wantLocked && Cursor.lockState != CursorLockMode.Locked) Cursor.lockState = CursorLockMode.Locked;
+        if (wantLocked) Cursor.visible = false;
+        if (!wantLocked && mouse.leftButton.wasPressedThisFrame) LockCursor(true);
+
+        if (sim != null) sim.keyboardBodyTranslateMultiplier = simBodyMultiplier * (kb.leftShiftKey.isPressed ? runMultiplier : 1f);
+
+        // Agacharse: se baja la altura de la camara mientras se mantiene C
+        bool crouching = kb.cKey.isPressed;
+        crouchOffset = Mathf.MoveTowards(crouchOffset, crouching ? standEyeHeight - crouchEyeHeight : 0f, 3f * Time.deltaTime);
+        if (cameraOffset != null) cameraOffset.localPosition = new Vector3(0f, baseOffsetY - crouchOffset, 0f);
+    }
+
     void LockCursor(bool locked)
     {
         wantLocked = locked;
@@ -87,6 +144,7 @@ public class PCMouseInteraction : MonoBehaviour
 
     void Update()
     {
+        if (simMode) { UpdateSimulator(); return; }
         if (!pcMode) return;
         var mouse = Mouse.current;
         var kb = Keyboard.current;
@@ -227,6 +285,19 @@ public class PCMouseInteraction : MonoBehaviour
 
     void OnGUI()
     {
+        if (simMode)
+        {
+            if (boxStyle == null) boxStyle = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.UpperLeft, fontSize = 15, padding = new RectOffset(12, 12, 10, 10) };
+            GUI.Box(new Rect(Screen.width - 452, 12, 440, 158),
+                "EXTRAS (PC)\n" +
+                "Shift izquierdo (mantener)  -  Correr\n" +
+                "C (mantener)  -  Agacharse\n" +
+                "Alt izquierdo (mantener)  -  Mover mano IZQUIERDA\n" +
+                "Espacio (mantener)  -  Mover mano DERECHA\n" +
+                "Esc  -  Liberar el cursor (clic para volver)\n" +
+                "El panel de la izquierda lista el resto de comandos.", boxStyle);
+            return;
+        }
         if (!pcMode) return;
         if (boxStyle == null)
         {
