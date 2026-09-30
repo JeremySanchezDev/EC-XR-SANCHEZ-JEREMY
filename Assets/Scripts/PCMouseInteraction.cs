@@ -1,41 +1,139 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.XR;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
-using UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation;
+using UnityEngine.XR.Management;
 
-// Modo PC (sin visor): la mira del centro de la pantalla usa el XR Interaction Toolkit.
-// Clic izquierdo: agarrar / soltar objetos, pulsar el boton o abrir la puerta. F: teletransporte. H: mostrar/ocultar ayuda.
+// Modo PC (sin visor): camara en primera persona con mouse + teclado que usa el XR Interaction Toolkit.
+// Si hay un visor VR activo, este script no toca nada y el rig funciona con los mandos.
 public class PCMouseInteraction : MonoBehaviour
 {
+    [Header("Referencias XR")]
     [SerializeField] XRInteractionManager manager;
     [SerializeField] NearFarInteractor interactor;
-    [SerializeField] TeleportationProvider teleportProvider;
+    [SerializeField] Transform originTransform;
+    [SerializeField] Transform cameraOffset;
+    [SerializeField] Transform leftController;
+    [SerializeField] Transform rightController;
+    [SerializeField] GameObject deviceSimulator;
+
+    [Header("Ajustes PC")]
+    [SerializeField] float lookSensitivity = 0.08f;
+    [SerializeField] float walkSpeed = 2.5f;
+    [SerializeField] float runMultiplier = 2f;
+    [SerializeField] float crouchMultiplier = 0.5f;
+    [SerializeField] float standEyeHeight = 1.65f;
+    [SerializeField] float crouchEyeHeight = 0.95f;
     [SerializeField] float reach = 6f;
 
     Camera cam;
+    CharacterController controller;
     IXRSelectInteractable held;
+    bool pcMode;
+    float yaw, pitch, eyeHeight, verticalSpeed;
     string hint = "";
     bool showHelp = true;
     GUIStyle boxStyle, hintStyle, titleStyle;
 
     void Start()
     {
+        var xr = XRGeneralSettings.Instance;
+        bool headsetActive = xr != null && xr.Manager != null && xr.Manager.activeLoader != null;
+        if (deviceSimulator != null) deviceSimulator.SetActive(false);
+        if (headsetActive) { enabled = false; return; }
+
+        pcMode = true;
         cam = Camera.main;
+        eyeHeight = standEyeHeight;
+
+        foreach (var d in originTransform.GetComponentsInChildren<TrackedPoseDriver>(true)) d.enabled = false;
+        // Sin mandos reales el modality manager apagaria los controladores; los dejamos activos para el modo PC.
+        foreach (var m in originTransform.GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Inputs.XRInputModalityManager>(true)) m.enabled = false;
+        if (leftController != null) leftController.gameObject.SetActive(true);
+        if (rightController != null) rightController.gameObject.SetActive(true);
+        cam.transform.localPosition = Vector3.zero;
+        cam.transform.localRotation = Quaternion.identity;
+        cameraOffset.localPosition = new Vector3(0f, eyeHeight, 0f);
+
+        foreach (var c in new[] { leftController, rightController })
+        {
+            if (c == null) continue;
+            c.SetParent(cam.transform, false);
+            c.localRotation = Quaternion.identity;
+        }
+        if (leftController != null) leftController.localPosition = new Vector3(-0.25f, -0.25f, 0.5f);
+        if (rightController != null) rightController.localPosition = new Vector3(0.25f, -0.25f, 0.6f);
+
+        controller = originTransform.GetComponent<CharacterController>();
+        if (controller != null)
+        {
+            controller.height = 1.7f;
+            controller.radius = 0.25f;
+            controller.center = new Vector3(0f, 0.85f, 0f);
+        }
+        yaw = originTransform.eulerAngles.y;
+        LockCursor(true);
+    }
+
+    void LockCursor(bool locked)
+    {
+        Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
+        Cursor.visible = !locked;
     }
 
     void Update()
     {
-        if (cam == null) { cam = Camera.main; return; }
+        if (!pcMode) return;
         var mouse = Mouse.current;
         var kb = Keyboard.current;
-        if (mouse == null) return;
+        if (mouse == null || kb == null) return;
 
-        if (kb != null && kb.hKey.wasPressedThisFrame) showHelp = !showHelp;
+        if (kb.escapeKey.wasPressedThisFrame) LockCursor(false);
+        if (kb.hKey.wasPressedThisFrame) showHelp = !showHelp;
+
+        bool locked = Cursor.lockState == CursorLockMode.Locked;
+        if (!locked)
+        {
+            if (mouse.leftButton.wasPressedThisFrame) LockCursor(true);
+            return;
+        }
+
+        Look(mouse);
+        Move(kb);
         if (mouse.leftButton.wasPressedThisFrame) OnClick();
-        if (kb != null && kb.fKey.wasPressedThisFrame) TryTeleport();
+        if (kb.fKey.wasPressedThisFrame) TryTeleport();
         UpdateHint();
+    }
+
+    void Look(Mouse mouse)
+    {
+        var delta = mouse.delta.ReadValue() * lookSensitivity;
+        yaw += delta.x;
+        pitch = Mathf.Clamp(pitch - delta.y, -89f, 89f);
+        originTransform.rotation = Quaternion.Euler(0f, yaw, 0f);
+        cam.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+    }
+
+    void Move(Keyboard kb)
+    {
+        bool crouching = kb.cKey.isPressed || kb.leftCtrlKey.isPressed;
+        bool running = kb.leftShiftKey.isPressed && !crouching;
+
+        float targetEye = crouching ? crouchEyeHeight : standEyeHeight;
+        eyeHeight = Mathf.MoveTowards(eyeHeight, targetEye, 4f * Time.deltaTime);
+        cameraOffset.localPosition = new Vector3(0f, eyeHeight, 0f);
+
+        float x = (kb.dKey.isPressed ? 1f : 0f) - (kb.aKey.isPressed ? 1f : 0f);
+        float z = (kb.wKey.isPressed ? 1f : 0f) - (kb.sKey.isPressed ? 1f : 0f);
+        float speed = walkSpeed * (running ? runMultiplier : 1f) * (crouching ? crouchMultiplier : 1f);
+        var move = (originTransform.right * x + originTransform.forward * z);
+        if (move.sqrMagnitude > 1f) move.Normalize();
+
+        if (controller == null) { originTransform.position += move * speed * Time.deltaTime; return; }
+        verticalSpeed = controller.isGrounded ? -1f : verticalSpeed + Physics.gravity.y * Time.deltaTime;
+        controller.Move((move * speed + Vector3.up * verticalSpeed) * Time.deltaTime);
     }
 
     void UpdateHint()
@@ -55,7 +153,7 @@ public class PCMouseInteraction : MonoBehaviour
             hint = door != null ? (door.IsOpen ? "[Clic izquierdo] Cerrar puerta" : "[Clic izquierdo] Abrir puerta")
                                 : "[Clic izquierdo] Encender / apagar la luz";
         }
-        else if (hit.collider.GetComponentInParent<TeleportationArea>() != null)
+        else if (hit.collider.GetComponentInParent<UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation.TeleportationArea>() != null)
             hint = "[F] Teletransportarse aqui";
     }
 
@@ -86,14 +184,16 @@ public class PCMouseInteraction : MonoBehaviour
 
     void TryTeleport()
     {
-        if (teleportProvider == null) return;
         if (!Physics.Raycast(cam.transform.position, cam.transform.forward, out var hit, 30f)) return;
-        if (hit.collider.GetComponentInParent<TeleportationArea>() == null) return;
-        teleportProvider.QueueTeleportRequest(new TeleportRequest { destinationPosition = hit.point });
+        if (hit.collider.GetComponentInParent<UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation.TeleportationArea>() == null) return;
+        if (controller != null) controller.enabled = false;
+        originTransform.position = hit.point;
+        if (controller != null) controller.enabled = true;
     }
 
     void OnGUI()
     {
+        if (!pcMode) return;
         if (boxStyle == null)
         {
             boxStyle = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.UpperLeft, fontSize = 15, padding = new RectOffset(12, 12, 10, 10) };
@@ -104,20 +204,23 @@ public class PCMouseInteraction : MonoBehaviour
         float cx = Screen.width * 0.5f, cy = Screen.height * 0.5f;
         GUI.Box(new Rect(cx - 3, cy - 3, 6, 6), GUIContent.none);
 
-        if (!string.IsNullOrEmpty(hint))
+        if (Cursor.lockState != CursorLockMode.Locked)
+            GUI.Box(new Rect(cx - 220, cy - 20, 440, 40), "Haz clic para volver a controlar la camara", hintStyle);
+        else if (!string.IsNullOrEmpty(hint))
             GUI.Box(new Rect(cx - 220, cy + 30, 440, 36), hint, hintStyle);
 
         if (showHelp)
         {
-            GUI.Box(new Rect(12, 12, 400, 232),
+            GUI.Box(new Rect(12, 12, 430, 262),
                 "CONTROLES (PC)\n" +
                 "W A S D  -  Moverse\n" +
-                "Q / E  -  Bajar / subir\n" +
+                "Shift izquierdo (mantener)  -  Correr\n" +
+                "C o Ctrl izquierdo (mantener)  -  Agacharse\n" +
                 "Mouse  -  Mirar\n" +
                 "Clic izquierdo  -  Agarrar, soltar, pulsar, abrir puerta\n" +
                 "F  -  Teletransportarse al piso apuntado\n" +
                 "H  -  Mostrar / ocultar esta ayuda\n" +
-                "Esc  -  Liberar el cursor\n\n" +
+                "Esc  -  Liberar el cursor del mouse\n\n" +
                 "Todos los objetos sueltos se pueden agarrar.", boxStyle);
         }
         else
