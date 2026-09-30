@@ -16,22 +16,24 @@ Escena principal: `Assets/Scenes/EC_XR_SanchezJeremy.unity`.
 - **Escenario:** piso, luz direccional, 4 paredes como límites visuales, mesa, pilar y luz puntual (más de cinco objetos 3D).
 - **Objetos manipulables:** cubo, esfera y cilindro con `Rigidbody` y `XR Grab Interactable`.
 - **Interacción a distancia:** botón amarillo en la pared norte; con el rayo enciende/apaga la luz de la sala y cambia su color (`RayInteractionToggle.cs`).
+- **Detalles:** piso con baldosas, alfombra, mesa con patas, estante, cajas, barril, marco de puerta, lámpara, rótulos y post-procesado (tonemapping, bloom, viñeta).
+- **Modo PC:** `PCMouseInteraction.cs` usa el XR Interaction Toolkit desde la mira del ratón.
 - **Reto libre:** teletransporte sobre el piso (`Teleportation Area`) y contador de objetos agarrados en un texto 3D (`GrabCounter.cs`).
 
 ## Controles
 **Con visor VR (OpenXR):** gatillo lateral (grip) para agarrar, apuntar con el rayo y gatillo para pulsar el botón, joystick hacia adelante para apuntar el teletransporte.
 
-**En PC sin visor (ratón y teclado, XR Device Simulator):**
-- Mover: `W A S D`; subir/bajar: `Q` / `E`.
-- Mirar: mantener `clic derecho` y mover el ratón (o `Tab` para alternar el bloqueo del cursor).
-- Mano izquierda: mantener `Shift izquierdo`; mano derecha: mantener `Espacio`.
-- Con una mano activa: `clic izquierdo` = gatillo, `G` = agarrar (grip), ratón = mover la mano.
-- El panel del simulador muestra el resto de atajos al ejecutar.
+**En PC sin visor (ratón y teclado):**
+- Mover: `W A S D`; subir/bajar: `Q` / `E`. Mirar: mover el ratón (cursor bloqueado; `Tab` alterna el bloqueo).
+- **Clic izquierdo** sobre el punto central (mira): agarrar el objeto apuntado; otro clic lo suelta/lanza. Sobre el botón amarillo, lo pulsa.
+- **F**: teletransportarse al punto del piso apuntado.
+- Extra: el XR Device Simulator permite controlar cada mano con `Shift izquierdo` / `Espacio`.
 
 ## Capturas
 ![Sala general](Screenshots/01_sala_general.png)
 ![Objetos en la mesa](Screenshots/02_objetos_mesa.png)
 ![Botón de rayo y contador](Screenshots/03_boton_rayo_y_contador.png)
+![Estante y puerta](Screenshots/04_estante_y_puerta.png)
 
 ## Video demostrativo
 _(agregar enlace, máximo 1 minuto)_
