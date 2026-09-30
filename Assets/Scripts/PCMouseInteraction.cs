@@ -127,6 +127,12 @@ public class PCMouseInteraction : MonoBehaviour
         if (wantLocked) Cursor.visible = false;
         if (!wantLocked && mouse.leftButton.wasPressedThisFrame) LockCursor(true);
 
+        if (kb.pKey.wasPressedThisFrame && sim != null)
+        {
+            var canvas = sim.GetComponentInChildren<Canvas>(true);
+            if (canvas != null) canvas.gameObject.SetActive(!canvas.gameObject.activeSelf);
+        }
+
         if (sim != null) sim.keyboardBodyTranslateMultiplier = simBodyMultiplier * (kb.leftShiftKey.isPressed ? runMultiplier : 1f);
 
         // Agacharse: se baja la altura de la camara mientras se mantiene C
@@ -288,7 +294,7 @@ public class PCMouseInteraction : MonoBehaviour
         if (simMode)
         {
             if (boxStyle == null) boxStyle = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.UpperLeft, fontSize = 15, padding = new RectOffset(12, 12, 10, 10) };
-            GUI.Box(new Rect(Screen.width - 452, 12, 440, 158),
+            GUI.Box(new Rect(Screen.width - 452, 12, 440, 180),
                 "EXTRAS (PC)\n" +
                 "Shift izquierdo (mantener)  -  Correr\n" +
                 "C (mantener)  -  Agacharse\n" +

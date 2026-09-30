@@ -28,6 +28,7 @@ Escena principal: `Assets/Scenes/EC_XR_SanchezJeremy.unity`.
 - `Shift izquierdo` (mantener): correr. `C` (mantener): agacharse.
 - `Espacio` (mantener): controlar la **mano derecha** con el ratón. `Alt izquierdo` (mantener): **mano izquierda**.
 - Con una mano activa: clic izquierdo = gatillo (pulsar botón, usar la linterna); `G` = grip (agarrar); mover el ratón mueve la mano/rayo. Para mover la puerta: agarrarla con grip y mover la mano.
+- `P`: mostrar / ocultar el panel de comandos del simulador.
 - `T` / `Y`: dejar fijas la mano izquierda / derecha. `Tab`: cambiar de dispositivo. `V`: reiniciar. El panel del simulador lista el resto.
 
 Modo alternativo sin simulador: en el componente `PCMouseInteraction` (objeto `PCMouseInteraction`) cambiar `Mode` a `First Person` para una cámara en primera persona (clic izquierdo agarra/suelta, clic derecho usa la linterna, `F` teletransporta, `H` ayuda).
