@@ -15,8 +15,8 @@ Escena principal: `Assets/Scenes/EC_XR_SanchezJeremy.unity`.
 ## Funcionalidades implementadas
 - **Escenario:** piso, luz direccional, 4 paredes como límites visuales, mesa, pilar y luz puntual (más de cinco objetos 3D).
 - **Objetos manipulables:** todos los objetos sueltos (cubo, esfera, cilindro, cajas, barril, cajas y libros del estante; 17 en total) con `Rigidbody` y `XR Grab Interactable`.
-- **Interacción a distancia:** botón amarillo en la pared norte; con el rayo enciende/apaga la luz de la sala y cambia su color (`RayInteractionToggle.cs`).
-- **Detalles:** piso con baldosas, alfombra, mesa con patas, estante, cajas, barril, marco de puerta, lámpara, rótulos y post-procesado (tonemapping, bloom, viñeta).
+- **Interacción a distancia:** botón amarillo en la pared norte; con el rayo (VR) o clic izquierdo (PC) enciende/apaga la lámpara del techo y cambia su color (`RayInteractionToggle.cs`).
+- **Detalles:** techo cerrado con lámpara colgante como única fuente de luz (sin luz solar), piso con baldosas, alfombra, mesa con patas, estante, cajas, barril, marco de puerta, lámpara, rótulos y post-procesado (tonemapping, bloom, viñeta).
 - **Modo PC:** `PCMouseInteraction.cs` da una cámara en primera persona (correr, agacharse, cursor bloqueado) y usa el XR Interaction Toolkit desde la mira del ratón. Si hay un visor VR activo, se desactiva solo.
 - **Puerta interactiva:** se abre y cierra con clic (PC) o con el rayo (VR) (`DoorController.cs`).
 - **Reto libre:** teletransporte sobre el piso (`Teleportation Area`) y contador de objetos agarrados en un texto 3D (`GrabCounter.cs`).
