@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Apellidos y nombres** | Sánchez Jeremy |
+| **Apellidos y nombres** | Sánchez Galán Jeremy Antonio |
 | **Código del estudiante** | _(completar)_ |
 | **Curso** | Laboratorio de Realidad Extendida (XR) para Videojuegos |
 | **Docente** | Victor Alejandro Arroyo Castro |
