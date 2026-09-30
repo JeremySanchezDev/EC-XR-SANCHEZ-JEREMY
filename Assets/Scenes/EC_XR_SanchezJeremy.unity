@@ -4843,8 +4843,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RayInteractionToggle
   targetLight: {fileID: 1402910658}
   targetRenderer: {fileID: 1105339352}
+  bulb: {fileID: 465511920}
+  extraLights:
+  - {fileID: 2074195588}
   onColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   offColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  ambientOn: {r: 0.12, g: 0.13, b: 0.17, a: 1}
+  ambientOff: {r: 0.005, g: 0.005, b: 0.008, a: 1}
+  reflectionOn: 0.15
+  bulbEmission: {r: 3, g: 2.7, b: 2, a: 1}
 --- !u!114 &1105339351
 MonoBehaviour:
   m_ObjectHideFlags: 0
