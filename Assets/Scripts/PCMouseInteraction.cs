@@ -35,6 +35,7 @@ public class PCMouseInteraction : MonoBehaviour
     float yaw, pitch, eyeHeight, verticalSpeed;
     string hint = "";
     bool showHelp = true;
+    bool wantLocked;
     GUIStyle boxStyle, hintStyle, titleStyle;
 
     void Start()
@@ -79,6 +80,7 @@ public class PCMouseInteraction : MonoBehaviour
 
     void LockCursor(bool locked)
     {
+        wantLocked = locked;
         Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
         Cursor.visible = !locked;
     }
@@ -93,7 +95,11 @@ public class PCMouseInteraction : MonoBehaviour
         if (kb.escapeKey.wasPressedThisFrame) LockCursor(false);
         if (kb.hKey.wasPressedThisFrame) showHelp = !showHelp;
 
-        bool locked = Cursor.lockState == CursorLockMode.Locked;
+        // Si Unity solto el cursor sin que el jugador lo pidiera (foco, alt-tab, recarga), se vuelve a bloquear.
+        if (wantLocked && Cursor.lockState != CursorLockMode.Locked) Cursor.lockState = CursorLockMode.Locked;
+        if (wantLocked) Cursor.visible = false;
+
+        bool locked = wantLocked;
         if (!locked)
         {
             if (mouse.leftButton.wasPressedThisFrame) LockCursor(true);
@@ -107,6 +113,18 @@ public class PCMouseInteraction : MonoBehaviour
         if (mouse.leftButton.wasReleasedThisFrame && held != null && ((Component)held).GetComponent<HingedDoor>() != null) ReleaseHeld();
         if (kb.fKey.wasPressedThisFrame) TryTeleport();
         UpdateHint();
+    }
+
+    void OnApplicationFocus(bool hasFocus)
+    {
+        if (pcMode && hasFocus && wantLocked) LockCursor(true);
+    }
+
+    void OnDisable()
+    {
+        if (!pcMode) return;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
     void Look(Mouse mouse)
@@ -220,7 +238,7 @@ public class PCMouseInteraction : MonoBehaviour
         float cx = Screen.width * 0.5f, cy = Screen.height * 0.5f;
         GUI.Box(new Rect(cx - 3, cy - 3, 6, 6), GUIContent.none);
 
-        if (Cursor.lockState != CursorLockMode.Locked)
+        if (!wantLocked)
             GUI.Box(new Rect(cx - 220, cy - 20, 440, 40), "Haz clic para volver a controlar la camara", hintStyle);
         else if (!string.IsNullOrEmpty(hint))
             GUI.Box(new Rect(cx - 320, cy + 30, 640, 36), hint, hintStyle);

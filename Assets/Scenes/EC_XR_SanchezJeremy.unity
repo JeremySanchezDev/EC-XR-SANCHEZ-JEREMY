@@ -4849,7 +4849,7 @@ MonoBehaviour:
   onColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   offColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   ambientOn: {r: 0.12, g: 0.13, b: 0.17, a: 1}
-  ambientOff: {r: 0.005, g: 0.005, b: 0.008, a: 1}
+  ambientOff: {r: 0.035, g: 0.04, b: 0.06, a: 1}
   reflectionOn: 0.15
   bulbEmission: {r: 3, g: 2.7, b: 2, a: 1}
 --- !u!114 &1105339351
@@ -8992,10 +8992,10 @@ Light:
   serializedVersion: 12
   m_Type: 0
   m_Color: {r: 1, g: 0.95, b: 0.8, a: 1}
-  m_Intensity: 20
-  m_Range: 12
-  m_SpotAngle: 50
-  m_InnerSpotAngle: 25
+  m_Intensity: 60
+  m_Range: 18
+  m_SpotAngle: 60
+  m_InnerSpotAngle: 30
   m_CookieSize2D: {x: 0.5, y: 0.5}
   m_Shadows:
     m_Type: 2
