@@ -103,6 +103,8 @@ public class PCMouseInteraction : MonoBehaviour
         Look(mouse);
         Move(kb);
         if (mouse.leftButton.wasPressedThisFrame) OnClick();
+        if (mouse.rightButton.wasPressedThisFrame) ActivateHeld();
+        if (mouse.leftButton.wasReleasedThisFrame && held != null && ((Component)held).GetComponent<HingedDoor>() != null) ReleaseHeld();
         if (kb.fKey.wasPressedThisFrame) TryTeleport();
         UpdateHint();
     }
@@ -140,19 +142,21 @@ public class PCMouseInteraction : MonoBehaviour
     {
         if (held != null)
         {
-            hint = "[Clic izquierdo] Soltar / lanzar";
+            var fl = (held as Component) != null ? ((Component)held).GetComponent<HeldFlashlight>() : null;
+            hint = fl != null ? "[Clic derecho] Linterna " + (fl.IsOn ? "OFF" : "ON") + "   |   [Clic izquierdo] Soltar / lanzar"
+                              : "[Clic izquierdo] Soltar / lanzar";
             return;
         }
         hint = "";
         if (!Physics.Raycast(cam.transform.position, cam.transform.forward, out var hit, reach)) return;
         var target = hit.collider.GetComponentInParent<XRBaseInteractable>();
-        if (target is XRGrabInteractable) hint = "[Clic izquierdo] Agarrar: " + target.name;
-        else if (target is XRSimpleInteractable)
+        if (target is XRGrabInteractable)
         {
-            var door = target.GetComponent<DoorController>();
-            hint = door != null ? (door.IsOpen ? "[Clic izquierdo] Cerrar puerta" : "[Clic izquierdo] Abrir puerta")
-                                : "[Clic izquierdo] Encender / apagar la luz";
+            var door = target.GetComponent<HingedDoor>();
+            hint = door != null ? "[Mantener clic izquierdo + mover la vista] Empujar / jalar la puerta"
+                                : "[Clic izquierdo] Agarrar: " + target.name;
         }
+        else if (target is XRSimpleInteractable) hint = "[Clic izquierdo] Encender / apagar la luz";
         else if (hit.collider.GetComponentInParent<UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation.TeleportationArea>() != null)
             hint = "[F] Teletransportarse aqui";
     }
@@ -182,6 +186,18 @@ public class PCMouseInteraction : MonoBehaviour
         }
     }
 
+    void ReleaseHeld()
+    {
+        manager.SelectExit(interactor, held);
+        held = null;
+    }
+
+    void ActivateHeld()
+    {
+        if (held is XRGrabInteractable grab)
+            grab.activated.Invoke(new ActivateEventArgs { interactorObject = interactor, interactableObject = grab });
+    }
+
     void TryTeleport()
     {
         if (!Physics.Raycast(cam.transform.position, cam.transform.forward, out var hit, 30f)) return;
@@ -207,17 +223,19 @@ public class PCMouseInteraction : MonoBehaviour
         if (Cursor.lockState != CursorLockMode.Locked)
             GUI.Box(new Rect(cx - 220, cy - 20, 440, 40), "Haz clic para volver a controlar la camara", hintStyle);
         else if (!string.IsNullOrEmpty(hint))
-            GUI.Box(new Rect(cx - 220, cy + 30, 440, 36), hint, hintStyle);
+            GUI.Box(new Rect(cx - 320, cy + 30, 640, 36), hint, hintStyle);
 
         if (showHelp)
         {
-            GUI.Box(new Rect(12, 12, 430, 262),
+            GUI.Box(new Rect(12, 12, 470, 328),
                 "CONTROLES (PC)\n" +
                 "W A S D  -  Moverse\n" +
                 "Shift izquierdo (mantener)  -  Correr\n" +
                 "C o Ctrl izquierdo (mantener)  -  Agacharse\n" +
                 "Mouse  -  Mirar\n" +
-                "Clic izquierdo  -  Agarrar, soltar, pulsar, abrir puerta\n" +
+                "Clic izquierdo  -  Agarrar / soltar objetos, pulsar el boton\n" +
+                "Mantener clic izq. en la puerta  -  Moverla con la vista\n" +
+                "Clic derecho  -  Usar el objeto en mano (linterna)\n" +
                 "F  -  Teletransportarse al piso apuntado\n" +
                 "H  -  Mostrar / ocultar esta ayuda\n" +
                 "Esc  -  Liberar el cursor del mouse\n\n" +

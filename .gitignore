@@ -1,3 +1,4 @@
+# Unity - carpetas generadas (se recrean al abrir el proyecto)
 /[Ll]ibrary/
 /[Tt]emp/
 /[Oo]bj/
@@ -5,14 +6,26 @@
 /[Bb]uilds/
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# Herramientas de desarrollo locales (no son necesarias para ejecutar el proyecto)
 /.claude/
 /.codegraph/
+/Assets/Plugins/
+/Assets/Plugins.meta
+
+# IDE
 /.vs/
 /.idea/
+/.vscode/
+.vsconfig
 *.csproj
 *.sln
+*.slnx
 *.suo
 *.user
+*.userprefs
 *.pidb
 *.booproj
 *.svd
@@ -20,8 +33,14 @@
 *.mdb
 *.opendb
 *.VC.db
+
+# Builds y temporales
 *.apk
 *.aab
 *.unitypackage
+*.app
+*.tmp
 sysinfo.txt
 crashlytics-build.properties
+.DS_Store
+Thumbs.db
