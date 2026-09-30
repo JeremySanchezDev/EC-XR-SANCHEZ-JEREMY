@@ -46,7 +46,7 @@ Modo alternativo sin simulador: en el componente `PCMouseInteraction` (objeto `P
 - Abrir la escena `Assets/Scenes/EC_XR_SanchezJeremy.unity` y pulsar Play. No hace falta visor VR.
 
 ## Video demostrativo
-_(agregar enlace, máximo 1 minuto)_
+no dio tiempo quise asegurar
 
 ## Tecnologías y paquetes
 - Unity 6000.3.10f1
